@@ -11827,6 +11827,87 @@ EMOJI_UNICODE_PORTUGUESE = {
     u':bandeira_país_de_gales:': u'\U0001F3F4\U000E0067\U000E0062\U000E0077\U000E006C\U000E0073\U000E007F'
 }
 
+EMOJI_TOTAL_ENGLISH = {**EMOJI_UNICODE_ENGLISH, **EMOJI_ALIAS_UNICODE_ENGLISH}
+
+def nth_repl(s, sub, repl, n):
+    """
+    Replace nth occurence of a substring in a string.
+    Source: https://stackoverflow.com/questions/35091557/replace-nth-occurrence-of-substring-in-string
+    """
+    find = s.find(sub)
+    # If find is not -1 we have found at least one match for the substring
+    i = find != -1
+    # loop util we find the nth or we find no match
+    while find != -1 and i != n:
+        # find + 1 means we start searching from after the last match
+        find = s.find(sub, find + 1)
+        i += 1
+    # If i is equal to n we found nth match so replace
+    if i == n:
+        return s[:find] + repl + s[find+len(sub):]
+    return s
+
+def add_missing_selectors(english_emojis_dict, other_language_emojis_dict):
+    items_to_modify_dict = dict()
+    for key_english, value_english in english_emojis_dict.items():
+        if 'selector' in key_english:
+            for key_other, value_other in other_language_emojis_dict.items():
+                if value_other == value_english:
+                    items_to_modify_dict[key_other] = value_other
+    for key, value in items_to_modify_dict.items():
+        other_language_emojis_dict[key] = value.replace('\U0000FE0F','')
+        new_key = nth_repl(s=key, sub=':', repl='_selector:', n=2)
+        other_language_emojis_dict[new_key] = value
+    return other_language_emojis_dict
+
+def add_duplicates(english_emojis_dict, other_language_emojis_dict):
+    items_to_modify_dict = dict()
+    for key_english, value_english in english_emojis_dict.items():
+        if '\U0000FE0F' in value_english and 'selector' not in key_english and value_english in other_language_emojis_dict.values():
+            for key_other, value_other in other_language_emojis_dict.items():
+                if value_other == value_english:
+                    items_to_modify_dict[key_other] = value_other
+    for key, value in items_to_modify_dict.items():
+        new_key = nth_repl(s=key, sub='_', repl='-', n=1)
+        other_language_emojis_dict[new_key] = value.replace('\U0000FE0F','')
+    return other_language_emojis_dict
+
+def add_remaining_missing_emojis(other_language_emojis_dict):
+    items_to_modify_dict = dict()
+    list_remaining_codes = [ u'\U0001F441\U0000FE0F\U0000200D\U0001F5E8\U0000FE0F',
+                             u'\U000026F9\U0000FE0F\U0000200D\U00002642\U0000FE0F',
+                             u'\U0001F3CC\U0000FE0F\U0000200D\U00002642\U0000FE0F',
+                             u'\U0001F3CB\U0000FE0F\U0000200D\U00002642\U0000FE0F',
+                             u'\U000026F9\U0000FE0F\U0000200D\U00002640\U0000FE0F',
+                             u'\U0001F3CC\U0000FE0F\U0000200D\U00002640\U0000FE0F',
+                             u'\U0001F3CB\U0000FE0F\U0000200D\U00002640\U0000FE0F',
+                             u'\U0001F575\U0000FE0F\U0000200D\U00002642\U0000FE0F',
+                             u'\U0001F575\U0000FE0F\U0000200D\U00002640\U0000FE0F'
+                             ]
+    for value in list_remaining_codes:
+        for key_other, value_other in other_language_emojis_dict.items():
+            if value_other == value:
+                items_to_modify_dict[key_other] = value_other
+    for key, value in items_to_modify_dict.items():
+        new_key_1 = nth_repl(s=key, sub=':', repl='_2:', n=2)
+        new_key_2 = nth_repl(s=key, sub=':', repl='_3:', n=2)
+        value_1 = nth_repl(s=value, sub='\U0000FE0F', repl='', n=1)
+        value_2 = nth_repl(s=value, sub='\U0000FE0F', repl='', n=2)
+        other_language_emojis_dict[new_key_1] = value_1
+        other_language_emojis_dict[new_key_2] = value_2
+    return other_language_emojis_dict
+
+def add_missing_emojis_relative_to_english(english_emojis_dict, other_language_emojis_dict):
+    other_language_emojis_dict = add_missing_selectors(english_emojis_dict=english_emojis_dict, other_language_emojis_dict=other_language_emojis_dict)
+    other_language_emojis_dict = add_duplicates(english_emojis_dict=english_emojis_dict, other_language_emojis_dict=other_language_emojis_dict)
+    other_language_emojis_dict = add_remaining_missing_emojis(other_language_emojis_dict=other_language_emojis_dict)
+    return other_language_emojis_dict
+
+
+EMOJI_UNICODE_SPANISH = add_missing_emojis_relative_to_english(english_emojis_dict=EMOJI_TOTAL_ENGLISH, other_language_emojis_dict=EMOJI_UNICODE_SPANISH)
+EMOJI_UNICODE_PORTUGUESE = add_missing_emojis_relative_to_english(english_emojis_dict=EMOJI_TOTAL_ENGLISH, other_language_emojis_dict=EMOJI_UNICODE_SPANISH)
+
+
 EMOJI_UNICODE = {
     'en' : EMOJI_UNICODE_ENGLISH,
     'es': EMOJI_UNICODE_SPANISH,
